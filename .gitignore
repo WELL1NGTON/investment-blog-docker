@@ -3,7 +3,7 @@ build
 npm-debug.log
 .env
 .DS_Store
-.rest
+requests.rest
 yarn-error.log
 
 #Blog images folder

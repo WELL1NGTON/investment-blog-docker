@@ -12,25 +12,49 @@ const router = express.Router();
 // @desc    Get an array of all images
 // @access  Private
 router.route("/").get(auth, (req: Request, res: Response) => {
-  const directoryPath = "./public/images/";
-  const resolvedPath = path.resolve(directoryPath);
-  fs.readdir(resolvedPath, (err, files) => {
-    if (err) {
-      console.log(err);
-      return res.status(404).json("Couldn't read images directory");
-    }
-    const imagesFiltered = files.filter((value) => value !== ".gitkeep");
-    res.status(200).json(
-      imagesFiltered.map(
-        (value) => `${req.protocol}://${req.get("host")}/images/${value}`
-      )
-      // imagesFiltered.map((value) => {
-      //   return {
-      //     path: `${req.protocol}://${req.get("host")}/images/${value}`,
-      //   };
-      // })
-    );
-  });
+  const limit = Number(req.query["limit"]) || 10;
+  const page = Number(req.query["page"]) || 0;
+  const tags: Array<any> = req.query["tag"] ? Array(req.query["tag"]) : [];
+
+  let condition: { [k: string]: any } = {};
+  if (tags.length > 0 || tags.length > 0 || tags.length > 0)
+    condition["$and"] = [];
+
+  ImagePath.find(condition)
+    .sort({ createdAt: "desc" })
+    .skip(page * limit)
+    .limit(limit)
+    .then((images) => {
+      res.status(200).json({
+        msg: `${images.length} imagens encontradas.`,
+        images,
+      });
+    })
+    .catch((err) => res.status(400).json({ msg: "Error: " + err }));
+  // const directoryPath = "./public/images/";
+  // const resolvedPath = path.resolve(directoryPath);
+
+  // fs.readdir(resolvedPath, (err, files) => {
+  //   if (err) {
+  //     console.log(err);
+  //     return res.status(404).json("Couldn't read images directory");
+  //   }
+  //   const imagesFiltered = files.filter((value) => value !== ".gitkeep");
+  //   const imageUrls = imagesFiltered.map(
+  //     (value) => `${req.protocol}://${req.get("host")}/images/${value}`
+  //   );
+  // res.status(200).json(
+  //   {
+  //     msg: `${imageUrls.length} imagens encontradas.`,
+  //     images: imageUrls,
+  //   }
+  //     // imagesFiltered.map((value) => {
+  //     //   return {
+  //     //     path: `${req.protocol}://${req.get("host")}/images/${value}`,
+  //     //   };
+  //     // })
+  //   );
+  // });
 });
 
 // @route   POST images/
@@ -39,14 +63,18 @@ router.route("/").get(auth, (req: Request, res: Response) => {
 router
   .route("/")
   .post(multer.single("image"), auth, (req: Request, res: Response) => {
-    console.log("req.body", req.body);
-    if (!req.file) return res.status(400).json("Error on file upload.");
-    const size = parseInt(req.body.size);
+    // console.log(req.body.tags);
+    if (!req.file)
+      return res.status(400).json({ msg: "Erro no upload do arquivo." });
+    const size = req.body.size ? parseInt(req.body.size) : null;
     compressImage(req.file, size)
       .then((newPath) => {
-        const url = `${req.protocol}://${req.get("host")}/images/${newPath}`;
-        console.log(req.body.user);
+        const newFileName = newPath.replace(/^.*[\\\/]/, "");
+        const url = `${req.protocol}://${req.get(
+          "host"
+        )}/images/${newFileName}`;
         const newImagePath: IImagePath = new ImagePath({
+          name: newFileName,
           path: newPath,
           url: url,
           articles: [],
@@ -57,6 +85,7 @@ router
           .save()
           .then(() =>
             res.status(201).json({
+              name: newFileName,
               path: newPath,
               url: url,
               articles: [],
@@ -79,17 +108,23 @@ router
 // @desc    Remove image from file-system
 // @access  Private
 router.route("/:fileName").delete(auth, (req: Request, res: Response) => {
-  console.log(req);
-  const filePath = `./public/images/${req.params.fileName}`;
+  const fileName = req.params.fileName;
+  const filePath = `./public/images/${fileName}`;
   const resolvedPath = path.resolve(filePath);
-  console.log(resolvedPath);
-  fs.unlink(resolvedPath, (err) => {
-    if (err) {
+  ImagePath.deleteOne({ name: fileName })
+    .then(() => {
+      fs.unlink(resolvedPath, (err) => {
+        if (err) {
+          console.log(err);
+          return res.status(500).json({ msg: "File not deleted." });
+        }
+        return res.status(200).json({ msg: `file ${fileName} deleted.` });
+      });
+    })
+    .catch((err) => {
       console.log(err);
-      res.status(500).json("File not deleted.");
-    }
-    res.status(204).json(`file ${req.params.fileName} deleted.`);
-  });
+      return res.status(500).json({ msg: "File not deleted." });
+    });
 });
 
 module.exports = router;

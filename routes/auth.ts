@@ -44,6 +44,7 @@ router.route("/").post((req: Request, res: Response) => {
         .cookie("access-token", accessToken, { httpOnly: true })
         .cookie("refresh-token", refreshToken, { httpOnly: true })
         .json({
+          msg: "Usuário autenticado com sucesso!",
           user: {
             id: user.id,
             name: user.name,
@@ -62,8 +63,10 @@ router.route("/").get(auth, (req: Request, res: Response) => {
   const user = req.body.user;
   User.findById(user.id)
     .select("-password")
-    .then((user) => res.json({ user }))
-    .catch((err) => res.status(400).json("Error: " + err));
+    .then((user) =>
+      res.json({ msg: `Usuário ${user?.name} está logado.`, user })
+    )
+    .catch((err) => res.status(401).json({ msg: "Error: " + err }));
 });
 
 // @route   delete auth/logout
@@ -79,9 +82,10 @@ router.route("/").delete(auth, (req: Request, res: Response) => {
       res
         .clearCookie("refresh-token")
         .clearCookie("access-token")
-        .json({ success: true })
+        .status(200)
+        .json({ msg: "Usuário desautenticado com sucesso!", success: true })
     )
-    .catch((err) => res.status(400).json("Error: " + err));
+    .catch((err) => res.status(400).json({ msg: "Error: " + err }));
 });
 
 module.exports = router;

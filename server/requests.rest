@@ -1,0 +1,38 @@
+@hostname = localhost
+@port = 5000
+@host = {{hostname}}:{{port}}
+@contentType = application/json
+@access-token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVmNWZlNjAzNTMxYzNmYjY3M2RhZDllZCIsImlhdCI6MTYwMDk3MzE4MywiZXhwIjoxNjAwOTc0MDgzfQ.3y3rgDP_xZHyP-XpFaX-H0gE44dYaeYBoq9zC9dBo-M
+@refresh-token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjVmNWZlNjAzNTMxYzNmYjY3M2RhZDllZCIsImlhdCI6MTYwMDk3MzE4MywiZXhwIjoxNjAxNTc3OTgzfQ.BuwRYi0B_Ox1UwPu8js3Yj0cHp5CR_ybB34u6vOxQYI
+
+###
+GET http://{{host}}/articles/
+
+###
+
+GET http://{{host}}/articles/teste123
+
+###
+
+POST http://{{host}}/auth/login
+Content-Type: {{contentType}}
+
+{
+  "email": "wellington@wellington",
+  "password": "159753"
+}
+
+###
+
+POST http://{{host}}/articles/add
+Content-Type: {{contentType}}
+access-token: {{access-token}}
+
+{
+  "tags": ["TESTE"],
+  "title": "teste1234",
+  "description": "teste",
+  "markdownArticle": "teste",
+  "date": "2020-09-24T22:44:37.161Z",
+  "author": "teste"
+}

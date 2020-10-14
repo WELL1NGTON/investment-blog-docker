@@ -1,0 +1,11 @@
+node_modules
+build
+npm-debug.log
+.env
+.DS_Store
+.rest
+yarn-error.log
+
+#Blog images folder
+public/images/*
+!public/images/.gitkeep

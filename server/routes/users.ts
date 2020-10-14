@@ -45,7 +45,7 @@ router.route("/").post(auth, (req, res) => {
             };
             res.status(200).json({ user: userDecoded });
           })
-          .catch((err) => res.status(400).json("Error: " + err));
+          .catch((err) => res.status(400).json({ msg: "Error: " + err }));
       });
     });
   });

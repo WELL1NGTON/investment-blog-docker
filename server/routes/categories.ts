@@ -9,8 +9,13 @@ const router = express.Router();
 router.route("/").get((req: Request, res: Response) => {
   Category.find({ visible: true })
     .sort({ createdAt: "desc" })
-    .then((categories) => res.json(categories))
-    .catch((err) => res.status(400).json("Error: " + err));
+    .then((categories) =>
+      res.json({
+        msg: `${categories.length} categorias encontradas.`,
+        categories,
+      })
+    )
+    .catch((err) => res.status(400).json({ msg: "Error: " + err }));
 });
 
 // // @route   POST categories

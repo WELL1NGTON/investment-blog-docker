@@ -27,8 +27,12 @@ router.route("/").get((req: Request, res: Response) => {
     .skip(page * limit)
     .limit(limit)
     .select("-markdownArticle")
-    .then((articles) => res.json(articles))
-    .catch((err) => res.status(400).json("Error: " + err));
+    .then((articles) =>
+      res
+        .status(200)
+        .json({ msg: `${articles.length} artigos encontrados.`, articles })
+    )
+    .catch((err) => res.status(400).json({ msg: err }));
 });
 
 // @route   GET articles/all
@@ -61,8 +65,10 @@ router.route("/all").get(auth, (req: Request, res: Response) => {
     .skip(page * limit)
     .limit(limit)
     .select("-markdownArticle")
-    .then((articles) => res.json(articles))
-    .catch((err) => res.status(400).json("Error: " + err));
+    .then((articles) =>
+      res.json({ msg: `${articles.length} artigos encontrados.`, articles })
+    )
+    .catch((err) => res.status(400).json({ msg: "Error: " + err }));
 });
 
 // @route   POST articles
@@ -99,10 +105,10 @@ router.route("/").post(auth, (req: Request, res: Response) => {
     .save()
     .then(() => {
       updateCategories(tags);
-      return res.json("Article added!");
+      return res.json({ msg: "Article added!" });
     })
     .catch((err) => {
-      res.status(400).json("Error: " + err);
+      res.status(400).json({ msg: "Error: " + err });
     });
 });
 
@@ -111,8 +117,10 @@ router.route("/").post(auth, (req: Request, res: Response) => {
 // @access  Public
 router.route("/:slug").get((req: Request, res: Response) => {
   Article.findOne({ slug: req.params.slug })
-    .then((article) => res.json(article))
-    .catch((err) => res.status(400).json("Error: " + err));
+    .then((article) =>
+      res.json({ msg: `Artigo ${req.params.slug} encontrado!`, article })
+    )
+    .catch((err) => res.status(400).json({ msg: "Error: " + err }));
 });
 
 // @route   DELETE articles/:slug
@@ -123,7 +131,7 @@ router.route("/:slug").delete(auth, (req: Request, res: Response) => {
     .then((article) => {
       if (article !== null) {
         updateCategories([], article.tags);
-        res.json("Article deleted.");
+        res.json({ mgs: "Article deleted." });
       }
     })
     .catch((err) => res.status(400).json("Error: " + err));
@@ -150,12 +158,12 @@ router.route("/:slug").post((req: Request, res: Response) => {
           .save()
           .then(() => {
             updateCategories(newTags, oldTags);
-            res.json("Article updated!");
+            res.json({ msg: "Article updated!" });
           })
-          .catch((err) => res.status(400).json("Error: " + err));
+          .catch((err) => res.status(400).json({ msg: "Error: " + err }));
       }
     })
-    .catch((err) => res.status(400).json("Error: " + err));
+    .catch((err) => res.status(400).json({ msg: "Error: " + err }));
 });
 
 module.exports = router;

@@ -1,6 +1,7 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IImagePath extends Document {
+  name: string;
   path: string;
   url: string;
   articles: Array<string>;
@@ -10,6 +11,12 @@ export interface IImagePath extends Document {
 
 const ImagePathSchema: Schema = new Schema(
   {
+    name: {
+      type: String,
+      required: true,
+      trim: true,
+      minlength: 3,
+    },
     path: {
       type: String,
       required: true,

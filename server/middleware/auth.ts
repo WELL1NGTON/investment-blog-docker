@@ -27,16 +27,16 @@ export async function auth(req: Request, res: Response, next: NextFunction) {
   if (!accessToken || !refreshToken)
     return res.status(401).json({ msg: "No token, authorization denied" });
 
-  try {
-    // Verify token
-    const decoded = decodeAccessToken(accessToken);
+  // Verify token
+  const decodedAccess = decodeAccessToken(accessToken);
 
+  if (decodedAccess) {
     // Add user from payload
-    req.body.user = decoded;
+    req.body.user = decodedAccess;
     req.cookies["access-token"] = accessToken;
     req.cookies["refresh-token"] = refreshToken;
     next();
-  } catch (e) {
+  } else {
     if (!refreshToken) {
       return res
         .status(400)
@@ -44,6 +44,7 @@ export async function auth(req: Request, res: Response, next: NextFunction) {
         .clearCookie("access-token")
         .json({ msg: "Token is not valid" });
     }
+
     const { newAccessToken, decoded } = await refreshAccessToken(refreshToken);
     if (!newAccessToken || !decoded) {
       RefreshToken.findOneAndDelete({ token: refreshToken }).exec();
@@ -52,11 +53,12 @@ export async function auth(req: Request, res: Response, next: NextFunction) {
         .clearCookie("refresh-token")
         .clearCookie("access-token")
         .json({ msg: "Refresh token is not valid" });
+    } else {
+      req.body.user = decoded;
+      req.cookies["access-token"] = newAccessToken;
+      req.cookies["refresh-token"] = refreshToken;
+      res.cookie("access-token", newAccessToken, { httpOnly: true });
+      next();
     }
-    req.body.user = decoded;
-    req.cookies["access-token"] = newAccessToken;
-    req.cookies["refresh-token"] = refreshToken;
-    res.cookie("access-token", newAccessToken, { httpOnly: true });
-    next();
   }
 }

@@ -1,7 +1,10 @@
 import fs from "fs";
 import sharp from "sharp";
 
-const compressImage = (file: Express.Multer.File, size: number) => {
+const compressImage = (
+  file: Express.Multer.File,
+  size: number | null = null
+) => {
   const newPath = file.path.split(".")[0] + ".jpg";
   return sharp(file.path)
     .resize(size)
@@ -11,7 +14,7 @@ const compressImage = (file: Express.Multer.File, size: number) => {
     .then((data) => {
       fs.access(file.path, (err) => {
         if (!err) {
-          console.log(file.path);
+          // console.log(file.path);
           fs.unlink(file.path, (err) => {
             if (err) console.log(err);
           });

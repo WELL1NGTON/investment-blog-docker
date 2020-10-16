@@ -1,6 +1,8 @@
 import mongoose, { Schema, Document } from "mongoose";
+import mongoose_fuzzy_search from "../typings/mongoose_fuzzy_search";
 import slugify from "slugify";
-import Category from "../models/category.model";
+const mongoose_fuzzy_searching = require("mongoose-fuzzy-searching");
+// import Category from "../models/category.model";
 
 export interface IArticle extends Document {
   title: string;
@@ -54,6 +56,14 @@ const ArticleSchema: Schema = new Schema(
   }
 );
 
+ArticleSchema.plugin(mongoose_fuzzy_searching, {
+  fields: [
+    { name: "title", weight: 3 },
+    { name: "description", weight: 2 },
+    { name: "markdownArticle", weight: 1 },
+  ],
+});
+
 ArticleSchema.pre<IArticle>("validate", function (next) {
   if (this.title) {
     this.slug = slugify(this.title, { lower: true, strict: true });
@@ -105,4 +115,7 @@ ArticleSchema.pre<IArticle>("validate", function (next) {
 //   }
 // });
 
-export default mongoose.model<IArticle>("Article", ArticleSchema);
+export default mongoose.model<IArticle>(
+  "Article",
+  ArticleSchema
+) as mongoose_fuzzy_search.MongooseFuzzyModel<IArticle>;

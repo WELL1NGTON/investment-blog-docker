@@ -1,7 +1,9 @@
 import express, { Request, Response } from "express";
-import Article from "../models/article.model";
+import Article, { IArticle } from "../models/article.model";
 import Category from "../models/category.model";
 import { auth } from "../middleware/auth";
+import mongoose_fuzzy_search from "../typings/mongoose_fuzzy_search";
+import { FilterQuery } from "mongoose";
 import async from "async";
 
 const router = express.Router();
@@ -10,19 +12,22 @@ const router = express.Router();
 // @desc    Get visible and published articles
 // @access  Public
 router.route("/").get((req: Request, res: Response) => {
+  // await updateFuzzy(Article, ["title", "description", "markdownArticle"]);
+  //parameters for the query
   const limit = Number(req.query["limit"]) || 10;
   const page = Number(req.query["page"]) || 0;
+  const search = req.query["search"] || "";
   const categories = req.query["category"] ? Array(req.query["category"]) : [];
   const state = "PUBLISHED";
   const visibility = "ALL";
 
-  let condition: { [k: string]: any } = {};
+  //setting the conditions
+  let condition: FilterQuery<IArticle> = {};
   condition["$and"] = [{ state }, { visibility }];
   if (categories.length > 0)
     condition["$and"].push({ tags: { $all: categories } });
 
-  Article.find()
-    .find(condition) //Return Published and Visible to all
+  Article.fuzzySearch(String(search), condition)
     .sort({ date: "desc" })
     .skip(page * limit)
     .limit(limit)
@@ -39,8 +44,9 @@ router.route("/").get((req: Request, res: Response) => {
 // @desc    Get all articles without restrictions
 // @access  Public
 router.route("/all").get(auth, (req: Request, res: Response) => {
-  const limit = Number(req.query["limit"]) || 10;
+  const limit = Number(req.query["limit"]) || 100;
   const page = Number(req.query["page"]) || 0;
+  const search = req.query["search"] || "";
   const categories: Array<any> = req.query["category"]
     ? Array(req.query["category"])
     : [];
@@ -49,18 +55,16 @@ router.route("/all").get(auth, (req: Request, res: Response) => {
   const visibility: string =
     typeof req.query["visibility"] === "string" ? req.query["visibility"] : "";
 
-  let condition: { [k: string]: any } = {};
+  let condition: FilterQuery<IArticle> = {};
+
   if (categories.length > 0 || state.length > 0 || visibility.length > 0)
     condition["$and"] = [];
   if (categories.length > 0)
-    condition["$and"].push({ tags: { $all: categories } });
-  if (state.length > 0) condition["$and"].push({ state });
-  if (visibility.length > 0) condition["$and"].push({ visibility });
-  // console.log("categories", categories);
-  // console.log("state", state);
-  // console.log("visibility", visibility);
-  Article.find()
-    .find(condition) //Return Published and Visible to all
+    condition["$and"]?.push({ tags: { $all: categories } });
+  if (state.length > 0) condition["$and"]?.push({ state });
+  if (visibility.length > 0) condition["$and"]?.push({ visibility });
+
+  Article.fuzzySearch(String(search), condition)
     .sort({ date: "desc" })
     .skip(page * limit)
     .limit(limit)
@@ -214,3 +218,36 @@ async function updateCategories(
   });
   return "success";
 }
+
+// updateFuzzy(Article, ["title", "description", "markdownArticle"]);
+const updateFuzzy = async (
+  Model: mongoose_fuzzy_search.MongooseFuzzyModel<IArticle>,
+  attrs: string[]
+) => {
+  for await (const doc of await Model.find()) {
+    console.log(doc);
+    const obj = attrs.reduce(
+      (acc, attr) => ({ ...acc, [attr]: doc.get(attr) }),
+      {}
+    );
+    await Model.findByIdAndUpdate(doc._id, obj);
+    console.log(obj);
+  }
+};
+
+const removeUnsedFuzzyElements = async (
+  Model: mongoose_fuzzy_search.MongooseFuzzyModel<IArticle>,
+  attrs: string[]
+) => {
+  for await (const doc of await Model.find()) {
+    const $unset = attrs.reduce(
+      (acc, attr) => ({ ...acc, [`${attr}_fuzzy`]: 1 }),
+      {}
+    );
+    await Model.findByIdAndUpdate(
+      doc._id,
+      { $unset },
+      { new: true, strict: false }
+    );
+  }
+};

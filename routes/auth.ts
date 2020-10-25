@@ -6,9 +6,10 @@ import { auth } from "../middleware/auth";
 import {
   generateAccessToken,
   generateRefreshToken,
+  generateResetPasswordToken,
   IUserInfo,
 } from "../util/jwtTokens";
-
+const nodemailer = require("nodemailer");
 const router = express.Router();
 
 // @route   POST auth/
@@ -69,7 +70,7 @@ router.route("/").get(auth, (req: Request, res: Response) => {
     .catch((err) => res.status(401).json({ msg: "Error: " + err }));
 });
 
-// @route   delete auth/logout
+// @route   delete auth/
 // @desc    Logout user
 // @access  Private
 router.route("/").delete(auth, (req: Request, res: Response) => {
@@ -86,6 +87,52 @@ router.route("/").delete(auth, (req: Request, res: Response) => {
         .json({ msg: "Usuário desautenticado com sucesso!", success: true })
     )
     .catch((err) => res.status(400).json({ msg: "Error: " + err }));
+});
+
+// @route   delete auth/forgot
+// @desc    Logout user
+// @access  Private
+router.route("/forgot").post((req: Request, res: Response) => {
+  const { email } = req.body;
+
+  const resetPasswordToken = generateResetPasswordToken(email);
+
+  User.findOneAndUpdate({ email }, { resetPasswordToken }).then(
+    async (value) => {
+      const mailHost = process.env.MAIL_HOST;
+      const mailPort = process.env.MAIL_PORT || 465;
+      const mailSecure = Boolean(process.env.MAIL_SECURE);
+      const mailUser = process.env.MAIL_AUTH_USER;
+      const mailPassword = process.env.MAIL_AUTH_PASSWORD;
+
+      let transporter = nodemailer.createTransport({
+        host: mailHost,
+        port: mailPort,
+        secure: mailSecure, // true for 465, false for other ports
+        auth: {
+          user: mailUser, // generated ethereal user
+          pass: mailPassword, // generated ethereal password
+        },
+      });
+
+      const resetLink = `http://localhost:3000/reset/${resetPasswordToken}`;
+      // send mail with defined transport object
+      let info = await transporter.sendMail({
+        from: '"InvestmentBlog " <foo@example.com>', // sender address
+        to: email, // list of receivers
+        subject: "Password Recovery", // Subject line
+        text: `Password recovery token is ${resetLink}`, // plain text body
+        html: `<b>Password recovery token is <a href="${resetLink}">${resetLink}</a></b>`, // html body
+      });
+
+      console.log("Message sent: %s", info.messageId);
+      // Message sent: <b658f8ca-6296-ccf4-8306-87d57a0b4321@example.com>
+
+      // Preview only available when sending through an Ethereal account
+      console.log("Preview URL: %s", nodemailer.getTestMessageUrl(info));
+      // Preview URL: https://ethereal.email/message/WaQKMgKddxQDoou.
+    }
+  );
 });
 
 module.exports = router;

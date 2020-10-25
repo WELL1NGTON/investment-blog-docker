@@ -18,7 +18,8 @@ const UserSchema: Schema = new Schema(
     },
     name: { type: String, required: true },
     password: { type: String, required: true },
-    role: { type: String, required: false },
+    role: { type: String, required: true },
+    resetPasswordToken: { type: String, required: false, unique: true },
   },
   {
     timestamps: true,

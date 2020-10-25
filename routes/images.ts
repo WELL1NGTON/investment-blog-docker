@@ -31,30 +31,6 @@ router.route("/").get(auth, (req: Request, res: Response) => {
       });
     })
     .catch((err) => res.status(400).json({ msg: "Error: " + err }));
-  // const directoryPath = "./public/images/";
-  // const resolvedPath = path.resolve(directoryPath);
-
-  // fs.readdir(resolvedPath, (err, files) => {
-  //   if (err) {
-  //     console.log(err);
-  //     return res.status(404).json("Couldn't read images directory");
-  //   }
-  //   const imagesFiltered = files.filter((value) => value !== ".gitkeep");
-  //   const imageUrls = imagesFiltered.map(
-  //     (value) => `${req.protocol}://${req.get("host")}/images/${value}`
-  //   );
-  // res.status(200).json(
-  //   {
-  //     msg: `${imageUrls.length} imagens encontradas.`,
-  //     images: imageUrls,
-  //   }
-  //     // imagesFiltered.map((value) => {
-  //     //   return {
-  //     //     path: `${req.protocol}://${req.get("host")}/images/${value}`,
-  //     //   };
-  //     // })
-  //   );
-  // });
 });
 
 // @route   POST images/
@@ -63,10 +39,14 @@ router.route("/").get(auth, (req: Request, res: Response) => {
 router
   .route("/")
   .post(multer.single("image"), auth, (req: Request, res: Response) => {
-    // console.log(req.body.tags);
     if (!req.file)
       return res.status(400).json({ msg: "Erro no upload do arquivo." });
     const size = req.body.size ? parseInt(req.body.size) : null;
+
+    const tags = req.body.tags
+      ? req.body.tags.map((tag: string) => tag.toUpperCase())
+      : [];
+
     compressImage(req.file, size)
       .then((newPath) => {
         const newFileName = newPath.replace(/^.*[\\\/]/, "");
@@ -78,7 +58,7 @@ router
           path: newPath,
           url: url,
           articles: [],
-          tags: [],
+          tags,
           user: req.body.user.id,
         });
         newImagePath

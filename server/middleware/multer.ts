@@ -1,16 +1,18 @@
-const multer = require("multer");
+import multer from "multer";
+import { Request } from "express";
 
-module.exports = multer({
+// module.exports = multer({
+export default multer({
   storage: multer.diskStorage({
-    destination: (req, file, cb) => {
+    destination: (req: Request, file: Express.Multer.File, cb) => {
       cb(null, "./public/images");
     },
 
-    filename: (req, file, cb) => {
+    filename: (req: Request, file: Express.Multer.File, cb) => {
       cb(null, Date.now().toString() + "-" + file.originalname);
     },
   }),
-  fileFilter: (req, file, cb) => {
+  fileFilter: (req: Request, file: Express.Multer.File, cb) => {
     const isAccepted = ["image/png", "image/jpg", "image/jpeg"].find(
       (formatoAceito) => formatoAceito == file.mimetype
     );

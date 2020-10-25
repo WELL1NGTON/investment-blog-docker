@@ -58,9 +58,9 @@ const ArticleSchema: Schema = new Schema(
 
 ArticleSchema.plugin(mongoose_fuzzy_searching, {
   fields: [
-    { name: "title", weight: 3 },
-    { name: "description", weight: 2 },
-    { name: "markdownArticle", weight: 1 },
+    { name: "title", weight: 2 },
+    { name: "description", weight: 1 },
+    // { name: "markdownArticle", weight: 1 },
   ],
 });
 
